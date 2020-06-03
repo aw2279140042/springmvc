@@ -15,4 +15,90 @@
 	<context:component-scan base-package="com">
 		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
 	</context:component-scan>
+	
+	<!-- 加载数据源配置文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties"/> 
+	<bean name="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+		<property name="url" value="${jdbc_url}" />
+		<property name="username" value="${jdbc_username}" />
+		<property name="password" value="${jdbc_password}" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="4" />
+		<!-- 连接池最大使用连接数量 -->
+		<property name="maxActive" value="400" />
+		
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="4" />
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="5000" />
+		
+		<property name="validationQuery" value="${validationQuery}" />
+		<property name="validationQueryTimeout" value="1" />
+		<property name="testOnBorrow" value="false" />
+		
+		<property name="testOnReturn" value="false" />
+		<property name="testWhileIdle" value="true" />
+
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+
+		<!-- 打开removeAbandoned功能 -->
+		<property name="removeAbandoned" value="true" />
+		<!-- 1800秒，也就是30分钟 -->
+		<property name="removeAbandonedTimeout" value="1800" />
+		<!-- 关闭abanded连接时输出错误日志 -->
+		<property name="logAbandoned" value="true" />
+
+		<!-- 监控数据库 -->
+		<property name="filters" value="mergeStat" />
+	</bean>
+	<!-- 配置MyBatis sqlsessionFactory -->
+    <bean id="sqlsessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+	   <property name="dataSource" ref="dataSource"/>
+	   <!-- 引入MyBatis核心配置文件 -->
+	   <property name="configLocation" value="classpath:MyBatis.xml"/>
+	   
+	    <!-- 引入Mapping配置文件 -->	   
+	   <property name="mapperLocations">
+			<list>				
+				<value>classpath:com/springmvc/mapper/*.xml</value>
+			</list>
+		</property>
+	</bean>
+	<!-- 配置sqlSessionTemplate --> 
+    <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate"> 
+        <constructor-arg index="0" ref="sqlsessionFactory" /> 
+    </bean> 
+	
+	<bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<aop:config>
+		<aop:pointcut id="bizMethods" expression="execution(public * com.springmvc.*.service.*.*(..)) || execution(public * com.springmvc.*.service.*(..))" />
+		<aop:advisor pointcut-ref="bizMethods" advice-ref="transactionAdvice"/>
+	</aop:config>
+	<tx:advice id="transactionAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="add*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="audit*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="compute*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="delete*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="insert*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="update*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="save*" rollback-for="Exception" propagation="REQUIRED" />
+			<tx:method name="send*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="create*" rollback-for="Exception"  propagation="REQUIRED" />
+			<tx:method name="do*" rollback-for="Exception"  propagation="REQUIRED" />
+		</tx:attributes>
+	</tx:advice>
+	
+	<aop:aspectj-autoproxy proxy-target-class="true"/> 
+	<!-- 基于注解(@Transactional)的事务管理
+	<tx:annotation-driven transaction-manager="txManager"/>
+	-->
+	<!--与 <context:component-scan base-package="com"> 分开后需要向spring注册
+	<context:annotation-config/>
+	 -->
 </beans>
