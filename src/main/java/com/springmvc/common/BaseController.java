@@ -20,8 +20,6 @@ public class BaseController {
 	protected HttpServletRequest request;
 	protected HttpServletResponse response;
 	protected HttpSession session;
-	protected String ajaxCacheRs;
-	protected Boolean businessChange;
 	protected Log log = LogFactory.getLog(BaseController.class);
 	
 	// 1.放置在方法的形参上：表示引用Model中的数据;2.放置在方法上面：表示请求该类的每个Action前都会首先执行它，也可以将一些准备数据的操作放置在该方法里面
@@ -56,9 +54,25 @@ public class BaseController {
 	
 	protected void writeJSON(Object object) throws Exception{
 		JSONObject json = new JSONObject();
-		json.put("code", 200);
+		json.put("code", "success");
 		json.put("msg", "");
 		json.put("data", object);
+		json.put("time", new Date().getTime());
+		response.setCharacterEncoding("utf-8");
+		response.setHeader("Cache-Control", "no-cache");
+		response.setContentType("text/plain;charset=utf-8");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		PrintWriter out = response.getWriter();
+		out.print(json.toString());
+		out.flush();
+		out.close();
+	}
+	
+	protected void writeError(String object) throws Exception{
+		JSONObject json = new JSONObject();
+		json.put("code", "error");
+		json.put("msg", object);
+		json.put("data", "{}");
 		json.put("time", new Date().getTime());
 		response.setCharacterEncoding("utf-8");
 		response.setHeader("Cache-Control", "no-cache");
@@ -171,4 +185,54 @@ public class BaseController {
     	}
     	return val;
     }
+
+	/**
+	 * 获取 request
+	 * @return the request
+	 */
+	public HttpServletRequest getRequest() {
+		return request;
+	}
+
+	/**
+	 * 设置 request
+	 * @param request the request to set
+	 */
+	public void setRequest(HttpServletRequest request) {
+		this.request = request;
+	}
+
+	/**
+	 * 获取 response
+	 * @return the response
+	 */
+	public HttpServletResponse getResponse() {
+		return response;
+	}
+
+	/**
+	 * 设置 response
+	 * @param response the response to set
+	 */
+	public void setResponse(HttpServletResponse response) {
+		this.response = response;
+	}
+
+	/**
+	 * 获取 session
+	 * @return the session
+	 */
+	public HttpSession getSession() {
+		return session;
+	}
+
+	/**
+	 * 设置 session
+	 * @param session the session to set
+	 */
+	public void setSession(HttpSession session) {
+		this.session = session;
+	}
+    
+    
 }
